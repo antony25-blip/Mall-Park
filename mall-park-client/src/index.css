@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+.home-hero {
+  min-height: 500px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 60px 24px;
+  color: white;
+  background-image:
+    linear-gradient(rgba(16, 36, 58, 0.75), rgba(16, 36, 58, 0.75)),
+    url('https://png.pngtree.com/background/20230425/original/pngtree-parking-lot-full-of-blue-picture-image_2478450.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
