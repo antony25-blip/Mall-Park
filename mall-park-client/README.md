@@ -1,16 +1,42 @@
-# React + Vite
+# Antony - REDUX and JSON-SERVER
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# redux:
+-created a store.js
+-create slice 
+    -parkingSlice.js
+        
+        Reducer	            When to use it
 
-Currently, two official plugins are available:
+        setParkingSlots	    Fetch parking slots from JSON Server
+        addParkingSlot	    Admin adds a new parking slot
+        updateParkingSlot	Admin edits slot details
+        deleteParkingSlot	Admin deletes a slot
+    
+    -bookingSlice.js
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+        Reducer	            When to use it
 
-## React Compiler
+        setBookings	        Fetch all bookings from JSON Server
+        addBooking	        Customer confirms a new parking reservation
+        updateBooking	    Update booking details or status
+        deleteBooking	    Remove a booking if deletion is permitted
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
-## Expanding the ESLint configuration
+# json-server:
+-create a db.json // parking=[],booking=[]
+-created the server file index.js 
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+-create apiservices,apiInstance in api folder
+-create allapi in service folder 
+    apis:
+        - saveResumeAPI
+        - viewResumeAPI
+        - allresumeAPI
+        - downloadResumeAPI
+        - getALlDownloadResumeAPI
+        - updateResumeAPI
+        - deleteResumeAPI
+
+
+## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
