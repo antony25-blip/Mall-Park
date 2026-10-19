@@ -1,25 +1,41 @@
 # Antony - REDUX and JSON-SERVER
 
-# redux:
--created a store.js
--create slice 
-    -parkingSlice.js
-        
-        Reducer	            When to use it
+## Redux
+- Created store.js 
+- Created Redux slices using Redux Toolkit (`createSlice` and `createAsyncThunk`) to manage parking slots and bookings.
+- Integrated API calls with JSON Server using API service functions.
 
-        setParkingSlots	    Fetch parking slots from JSON Server
-        addParkingSlot	    Admin adds a new parking slot
-        updateParkingSlot	Admin edits slot details
-        deleteParkingSlot	Admin deletes a slot
-    
-    -bookingSlice.js
+1. parkingSlice.js
 
-        Reducer	            When to use it
+Manages parking slot data and API operations.
 
-        setBookings	        Fetch all bookings from JSON Server
-        addBooking	        Customer confirms a new parking reservation
-        updateBooking	    Update booking details or status
-        deleteBooking	    Remove a booking if deletion is permitted
+| Async Thunk           | Purpose |
+
+| `fetchParkingSlots`   | Fetch all parking slots from JSON Server |
+| `createParkingSlot`   | Add a new parking slot (Admin) |
+| `editParkingSlot`     | Update existing parking slot details (Admin) |
+| `removeParkingSlot`   | Delete a parking slot (Admin) |
+
+State:
+- `parking` – Stores parking slot data.
+- `loading` – Tracks API request status.
+- `error` – Stores API error messages.
+
+2. bookingSlice.js
+
+Manages parking reservation data and API operations.
+
+| Async Thunk       | Purpose |
+
+| `fetchBookings`   | Fetch all bookings from JSON Server |
+| `createBooking`   | Create a new parking reservation (Customer) |
+| `editBooking`     | Update booking details or status |
+| `removeBooking`   | Delete a booking when permitted |
+
+State:
+- `bookings` – Stores booking data.
+- `loading` – Tracks API request status.
+- `error` – Stores API error messages.
 
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
