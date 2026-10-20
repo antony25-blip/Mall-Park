@@ -1,4 +1,205 @@
 {
-  "parking": [],
-  "booking": []
+  "parking": [
+    {
+      "id": "1",
+      "name": "Basement Parking",
+      "slots": [
+        {
+          "id": "A1",
+          "name": "Slot A1",
+          "pricePerHour": 30,
+          "status": "available"
+        },
+        {
+          "id": "A2",
+          "name": "Slot A2",
+          "pricePerHour": 30,
+          "status": "available"
+        },
+        {
+          "id": "A3",
+          "name": "Slot A3",
+          "pricePerHour": 30,
+          "status": "available"
+        },
+        {
+          "id": "A4",
+          "name": "Slot A4",
+          "pricePerHour": 30,
+          "status": "available"
+        },
+        {
+          "id": "A5",
+          "name": "Slot A5",
+          "pricePerHour": 30,
+          "status": "available"
+        },
+        {
+          "id": "A6",
+          "name": "Slot A6",
+          "pricePerHour": 30,
+          "status": "available"
+        },
+        {
+          "id": "A7",
+          "name": "Slot A7",
+          "pricePerHour": 30,
+          "status": "available"
+        },
+        {
+          "id": "A8",
+          "name": "Slot A8",
+          "pricePerHour": 30,
+          "status": "available"
+        },
+        {
+          "id": "A9",
+          "name": "Slot A9",
+          "pricePerHour": 30,
+          "status": "available"
+        },
+        {
+          "id": "A10",
+          "name": "Slot A10",
+          "pricePerHour": 30,
+          "status": "available"
+        }
+      ]
+    },
+    {
+      "id": "2",
+      "name": "Ground Floor Parking",
+      "slots": [
+        {
+          "id": "B1",
+          "name": "Slot B1",
+          "pricePerHour": 40,
+          "status": "available"
+        },
+        {
+          "id": "B2",
+          "name": "Slot B2",
+          "pricePerHour": 40,
+          "status": "available"
+        },
+        {
+          "id": "B3",
+          "name": "Slot B3",
+          "pricePerHour": 40,
+          "status": "available"
+        },
+        {
+          "id": "B4",
+          "name": "Slot B4",
+          "pricePerHour": 40,
+          "status": "available"
+        },
+        {
+          "id": "B5",
+          "name": "Slot B5",
+          "pricePerHour": 40,
+          "status": "available"
+        },
+        {
+          "id": "B6",
+          "name": "Slot B6",
+          "pricePerHour": 40,
+          "status": "available"
+        },
+        {
+          "id": "B7",
+          "name": "Slot B7",
+          "pricePerHour": 40,
+          "status": "available"
+        },
+        {
+          "id": "B8",
+          "name": "Slot B8",
+          "pricePerHour": 40,
+          "status": "available"
+        },
+        {
+          "id": "B9",
+          "name": "Slot B9",
+          "pricePerHour": 40,
+          "status": "available"
+        },
+        {
+          "id": "B10",
+          "name": "Slot B10",
+          "pricePerHour": 40,
+          "status": "available"
+        }
+      ]
+    },
+    {
+      "id": "3",
+      "name": "Premium Parking",
+      "slots": [
+        {
+          "id": "C1",
+          "name": "Slot C1",
+          "pricePerHour": 60,
+          "status": "available"
+        },
+        {
+          "id": "C2",
+          "name": "Slot C2",
+          "pricePerHour": 60,
+          "status": "available"
+        },
+        {
+          "id": "C3",
+          "name": "Slot C3",
+          "pricePerHour": 60,
+          "status": "available"
+        },
+        {
+          "id": "C4",
+          "name": "Slot C4",
+          "pricePerHour": 60,
+          "status": "available"
+        },
+        {
+          "id": "C5",
+          "name": "Slot C5",
+          "pricePerHour": 60,
+          "status": "available"
+        },
+        {
+          "id": "C6",
+          "name": "Slot C6",
+          "pricePerHour": 60,
+          "status": "available"
+        },
+        {
+          "id": "C7",
+          "name": "Slot C7",
+          "pricePerHour": 60,
+          "status": "available"
+        },
+        {
+          "id": "C8",
+          "name": "Slot C8",
+          "pricePerHour": 60,
+          "status": "available"
+        },
+        {
+          "id": "C9",
+          "name": "Slot C9",
+          "pricePerHour": 60,
+          "status": "available"
+        },
+        {
+          "id": "C10",
+          "name": "Slot C10",
+          "pricePerHour": 60,
+          "status": "available"
+        }
+      ]
+    }
+  ],
+  "booking": [
+    
+  ]
 }
