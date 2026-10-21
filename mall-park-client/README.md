@@ -63,9 +63,15 @@ To run them separately, use `npm run dev` from `mall-park-client` and
 Customers can browse parking and current availability without an account.
 Selecting a slot opens the booking flow; unauthenticated customers are sent to
 Register/Sign In and returned to the selected parking area after authentication.
+Customers enter a vehicle registration number when booking. The admin dashboard
+shows each reservation with the customer's name and account ID, vehicle
+registration, and booking details.
+Admins can also create bookings from the parking flow using their admin account.
 Signed-in customers can view and cancel their own future confirmed bookings.
 The admin dashboard shows all bookings and current parking availability, and
 supports vehicle check-in and check-out.
+Customer account IDs are sequential numbers. On API startup, existing UUID
+customer IDs are migrated to numbers and linked bookings are updated to match.
 
 Authentication and booking authorization are enforced by the API. Passwords
 are salted and hashed with Node's `scrypt`; signed, HTTP-only session cookies

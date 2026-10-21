@@ -42,7 +42,7 @@ function Header() {
             Find Parking
           </Button>
 
-          {user && (
+          {user && user.role !== 'admin' && (
             <Button color="inherit" component={Link} to="/my-bookings">
               My Bookings
             </Button>

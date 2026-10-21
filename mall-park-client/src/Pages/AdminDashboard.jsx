@@ -274,6 +274,15 @@ function AdminDashboard() {
                                         {booking.areaName || "Parking area"} · {booking.slotName || booking.slotId}
                                     </Typography>
                                     <Typography color="text.secondary">
+                                        Customer: {booking.customerName || "Unknown customer"}
+                                    </Typography>
+                                    <Typography color="text.secondary">
+                                        Customer email: {booking.customerEmail || "Unavailable"}
+                                    </Typography>
+                                    <Typography color="text.secondary">
+                                        Vehicle registration: {booking.vehicleRegistration || "Not recorded for this booking"}
+                                    </Typography>
+                                    <Typography color="text.secondary">
                                         {formatDate(booking.date)} at {booking.startTime || "time unavailable"}
                                         {booking.duration ? ` · ${booking.duration} hour(s)` : ""}
                                     </Typography>

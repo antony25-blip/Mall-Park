@@ -40,6 +40,7 @@ function Booking() {
     const [date, setDate] = useState("");
     const [startTime, setStartTime] = useState("");
     const [duration, setDuration] = useState(1);
+    const [vehicleRegistration, setVehicleRegistration] = useState("");
 
     const [message, setMessage] = useState("");
     const [messageType, setMessageType] = useState("error");
@@ -190,6 +191,17 @@ function Booking() {
             return;
         }
 
+        const normalizedVehicleRegistration = vehicleRegistration.trim().toUpperCase();
+        if (
+            normalizedVehicleRegistration.length < 2 ||
+            normalizedVehicleRegistration.length > 20 ||
+            !/^[A-Z0-9 -]+$/.test(normalizedVehicleRegistration)
+        ) {
+            setMessage("Enter a valid vehicle registration number.");
+            setMessageType("error");
+            return;
+        }
+
         if (
             !Number.isInteger(Number(duration)) ||
             Number(duration) < 1
@@ -217,6 +229,7 @@ function Booking() {
             areaName: area.name,
             slotId: slot.id,
             slotName: slot.name,
+            vehicleRegistration: normalizedVehicleRegistration,
             date,
             startTime,
             timeZoneOffsetMinutes: start.getTimezoneOffset(),
@@ -238,6 +251,7 @@ function Booking() {
             setDate("");
             setStartTime("");
             setDuration(1);
+            setVehicleRegistration("");
 
         } catch (error) {
             setMessageType("error");
@@ -378,6 +392,22 @@ function Booking() {
                             ))}
                         </TextField>
 
+                        <TextField
+                            label="Vehicle Registration Number"
+                            value={vehicleRegistration}
+                            onChange={(event) => {
+                                setVehicleRegistration(event.target.value.toUpperCase());
+                                clearMessage();
+                            }}
+                            slotProps={{
+                                htmlInput: {
+                                    maxLength: 20,
+                                    autoCapitalize: "characters",
+                                },
+                            }}
+                            required
+                        />
+
                         {availabilityError && (
                             <Alert severity="error">{availabilityError}</Alert>
                         )}
@@ -506,6 +536,7 @@ function Booking() {
                                 submitting ||
                                 !area ||
                                 !slot ||
+                                !vehicleRegistration.trim() ||
                                 !date ||
                                 !startTime
                             }

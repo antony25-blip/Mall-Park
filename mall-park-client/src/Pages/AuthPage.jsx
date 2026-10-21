@@ -51,12 +51,17 @@ function AuthPage({ mode }) {
         setSubmitting(true);
 
         try {
+            let signedInUser;
             if (isRegister) {
-                await register({ name, email, password });
+                signedInUser = await register({ name, email, password });
             } else {
-                await login({ email, password });
+                signedInUser = await login({ email, password });
             }
-            navigate(destination, { replace: true });
+            const nextDestination = signedInUser.role === "admin" &&
+                (!requestedDestination || requestedDestination.pathname === "/my-bookings")
+                ? "/admin"
+                : destination;
+            navigate(nextDestination, { replace: true });
         } catch (requestError) {
             setError(
                 requestError.response?.data?.message ||
