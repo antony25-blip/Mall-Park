@@ -200,6 +200,18 @@
     }
   ],
   "booking": [
-    
+    {
+      "areaId": "1",
+      "areaName": "Basement Parking",
+      "slotId": "A1",
+      "slotName": "Slot A1",
+      "date": "2026-10-22",
+      "startTime": "01:53",
+      "duration": 8,
+      "pricePerHour": 30,
+      "totalFee": 240,
+      "status": "cancelled",
+      "id": 1
+    }
   ]
 }
