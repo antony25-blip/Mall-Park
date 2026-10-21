@@ -1,8 +1,14 @@
 import axios from 'axios'
 
+const apiBaseUrl = (
+  import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.DEV ? "/api" : "http://localhost:3000")
+).replace(/\/+$/, "");
+
 const axiosInstance = axios.create({
-  baseURL: "http://localhost:3000",
+  baseURL: apiBaseUrl,
   timeout: 5000,
+  withCredentials: true,
 });
 
 axiosInstance.interceptors.response.use(
@@ -15,7 +21,7 @@ axiosInstance.interceptors.response.use(
     const status = error.response?.status;
 
     if (status === 401) {
-      console.log("Unauthorised Access - Redirect to Login page");
+      window.dispatchEvent(new Event("mallpark:session-expired"));
     } 
     else if (status === 404) {
       console.log("API Not Found");

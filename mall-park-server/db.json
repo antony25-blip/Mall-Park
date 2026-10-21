@@ -200,6 +200,54 @@
     }
   ],
   "booking": [
-    
+    {
+      "userId": "a896d40f-b6b7-4d31-abb5-717f6e0f43a1",
+      "areaId": "1",
+      "areaName": "Basement Parking",
+      "slotId": "A5",
+      "slotName": "Slot A5",
+      "date": "2026-10-28",
+      "startTime": "21:07",
+      "timeZoneOffsetMinutes": -330,
+      "duration": 1,
+      "pricePerHour": 30,
+      "totalFee": 30,
+      "status": "checked-in",
+      "id": 1,
+      "checkedInAt": "2026-10-21T15:07:10.590Z"
+    },
+    {
+      "userId": "a896d40f-b6b7-4d31-abb5-717f6e0f43a1",
+      "areaId": "1",
+      "areaName": "Basement Parking",
+      "slotId": "A2",
+      "slotName": "Slot A2",
+      "date": "2026-10-22",
+      "startTime": "20:20",
+      "timeZoneOffsetMinutes": -330,
+      "duration": 2,
+      "pricePerHour": 30,
+      "totalFee": 60,
+      "status": "confirmed",
+      "id": 2
+    }
+  ],
+  "users": [
+    {
+      "id": "a896d40f-b6b7-4d31-abb5-717f6e0f43a1",
+      "name": "Gishnu Prasad",
+      "email": "gishnugp7117@gmail.com",
+      "role": "customer",
+      "salt": "355febbe756fb99706a13aaa1d1a7bd7",
+      "passwordHash": "4b63475a52e7e875847bf14fed1de8d3f2c486bc0f4f29ca3505626fdefb15c97f5002f0aec3d9fdf715f645e6e9996e1859a834693e45aad19ac40128e22ebf"
+    },
+    {
+      "id": "8009a320-0288-4937-aa2a-add35327e7d5",
+      "name": "MallPark Admin",
+      "email": "admin@mallpark.local",
+      "role": "admin",
+      "salt": "3423c2f7e0a85cb03203d8ab0802c804",
+      "passwordHash": "d12f136c96246d3bc79e31ed2c173571d31c0edd22ed8c9403c2e03ef5a775cd59dc5e997a64dcef7576ca16dc6679857f2e23a1d68a9b7e1ab8fc56a89f04dd"
+    }
   ]
 }

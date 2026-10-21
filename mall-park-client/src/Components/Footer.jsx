@@ -9,6 +9,8 @@ import {
 } from '@mui/material';
 
 import { LuCircleParking } from 'react-icons/lu';
+import { Link as RouterLink } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import {
   FaInstagram,
   FaFacebook,
@@ -17,6 +19,8 @@ import {
 } from 'react-icons/fa';
 
 function Footer() {
+  const { user } = useAuth();
+
   return (
     <Box
       component="footer"
@@ -31,7 +35,7 @@ function Footer() {
         <Grid container spacing={4}>
 
           {/* Brand */}
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <LuCircleParking size={32} color="#2DD4BF" />
 
@@ -50,39 +54,41 @@ function Footer() {
           </Grid>
 
           {/* Quick Links */}
-          <Grid className="ms-5 ps-5"  item xs={6} md={2}>
+          <Grid className="ms-5 ps-5" size={{ xs: 6, md: 2 }}>
             <Typography variant="h6" fontWeight="bold" gutterBottom>
               Explore
             </Typography>
 
-            <Link href="/" color="inherit" underline="hover" display="block" sx={{ mb: 1 }}>
+            <Link component={RouterLink} to="/" color="inherit" underline="hover" display="block" sx={{ mb: 1 }}>
               Home
             </Link>
             <br />
 
-            <Link href="/parking" color="inherit" underline="hover" display="block">
+            <Link component={RouterLink} to="/parking" color="inherit" underline="hover" display="block">
               Find Parking
             </Link>
           </Grid>
 
           {/* Bookings */}
-          <Grid item xs={6} md={3}>
+          <Grid size={{ xs: 6, md: 3 }}>
             <Typography variant="h6" fontWeight="bold" gutterBottom>
               Bookings
             </Typography>
 
-            <Link href="/my-bookings" color="inherit" underline="hover" display="block" sx={{ mb: 1 }}>
-              My Bookings
+            <Link component={RouterLink} to={user ? "/my-bookings" : "/login"} color="inherit" underline="hover" display="block" sx={{ mb: 1 }}>
+              Bookings
             </Link>
             <br />
 
-            <Link href="/alternatives" color="inherit" underline="hover" display="block">
-              Alternative Parking
-            </Link>
+            {user?.role === "admin" && (
+              <Link component={RouterLink} to="/admin" color="inherit" underline="hover" display="block">
+                Admin Dashboard
+              </Link>
+            )}
           </Grid>
 
           {/* Social Media */}
-          <Grid item xs={12} md={3}>
+          <Grid size={{ xs: 12, md: 3 }}>
             <Typography variant="h6" fontWeight="bold" gutterBottom>
               Connect With Us
             </Typography>
@@ -117,4 +123,3 @@ function Footer() {
 }
 
 export default Footer;
-

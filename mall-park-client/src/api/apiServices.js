@@ -8,12 +8,7 @@ const apiService = async (httpMethod, url, reqBody) => {
         data: reqBody
     };
 
-    try {
-        const response = await axiosInstance(reqConfig);
-        return response;
-    } catch (err) {
-        throw err;
-    }
+    return axiosInstance(reqConfig);
 };
 
 export default apiService;

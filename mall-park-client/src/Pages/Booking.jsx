@@ -3,8 +3,9 @@ import { useDispatch, useSelector } from "react-redux";
 import { Link, useLocation } from "react-router-dom";
 import {Alert, Box,Button,Card,CardContent,CircularProgress, Container,MenuItem,TextField, Typography,} from "@mui/material";
 import { fetchParkingSlots } from "../redux/slice/parkingSlice";
-import {fetchBookings, createBooking,} from "../redux/slice/bookingSlice";
+import { createBooking } from "../redux/slice/bookingSlice";
 import { toast } from "react-toastify";
+import { parkingAvailabilityAPI } from "../Services/allApi";
 
 
 function Booking() {
@@ -22,12 +23,7 @@ function Booking() {
     } = useSelector((state) => state.parkingSlice);
 
     // Read bookings from Redux.
-    const {
-        bookings = [],
-        loading: bookingsLoading,
-        submitting,
-        error: bookingError,
-    } = useSelector((state) => state.bookingSlice);
+    const { submitting } = useSelector((state) => state.bookingSlice);
 
     // Find the matching backend parking area by name.
     const area = areas.find(
@@ -35,6 +31,9 @@ function Booking() {
             item.name?.trim().toLowerCase() ===
             selectedArea?.name?.trim().toLowerCase()
     );
+    const areaStartingPrice = area?.slots?.length
+        ? Math.min(...area.slots.map((item) => Number(item.pricePerHour) || 0))
+        : Number(selectedArea?.price || 0);
 
     // Form values.
     const [slotId, setSlotId] = useState("");
@@ -44,75 +43,113 @@ function Booking() {
 
     const [message, setMessage] = useState("");
     const [messageType, setMessageType] = useState("error");
+    const [availabilityResult, setAvailabilityResult] = useState({
+        key: "",
+        data: null,
+        error: "",
+    });
+    const today = new Date();
+    today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+    const minimumDate = today.toISOString().slice(0, 10);
+    const requestedStart = date && startTime
+        ? new Date(`${date}T${startTime}`)
+        : null;
+    const selectedTimeIsPast = Boolean(
+        requestedStart &&
+        (Number.isNaN(requestedStart.getTime()) || requestedStart <= new Date())
+    );
 
-    // Load parking areas and existing bookings.
+    // Load parking areas.
     useEffect(() => {
         dispatch(fetchParkingSlots());
-        dispatch(fetchBookings());
     }, [dispatch]);
 
-
     useEffect(() => {
-  if (date && startTime) {
-    dispatch(fetchBookings());
-  }
-}, [date, startTime, dispatch]);
+        if (!area || selectedTimeIsPast) {
+            return undefined;
+        }
 
+        let active = true;
+        const filters = date && startTime
+            ? {
+                areaId: area.id,
+                date,
+                startTime,
+                duration,
+                timeZoneOffsetMinutes: new Date(`${date}T${startTime}`).getTimezoneOffset(),
+            }
+            : { areaId: area.id };
+        const requestKey = JSON.stringify(filters);
+
+        parkingAvailabilityAPI(filters)
+            .then((response) => {
+                if (active) {
+                    setAvailabilityResult({
+                        key: requestKey,
+                        data: response.data.find(
+                            (entry) => String(entry.areaId) === String(area.id)
+                        ) || null,
+                        error: "",
+                    });
+                }
+            })
+            .catch((error) => {
+                if (active) {
+                    setAvailabilityResult({
+                        key: requestKey,
+                        data: null,
+                        error: error.response?.data?.message ||
+                            "Unable to check slot availability. Please try again.",
+                    });
+                }
+            });
+
+        return () => {
+            active = false;
+        };
+    }, [area, date, startTime, duration, selectedTimeIsPast]);
+
+    const availabilityKey = JSON.stringify(
+        date && startTime
+            ? {
+                areaId: area?.id,
+                date,
+                startTime,
+                duration,
+                timeZoneOffsetMinutes: new Date(`${date}T${startTime}`).getTimezoneOffset(),
+            }
+            : { areaId: area?.id }
+    );
+    const availability = availabilityResult.key === availabilityKey
+        ? availabilityResult.data
+        : null;
+    const availabilityError = availabilityResult.key === availabilityKey
+        ? availabilityResult.error
+        : "";
+    const availabilityLoading = Boolean(
+        area && !selectedTimeIsPast && availabilityResult.key !== availabilityKey
+    );
     // Get available slots for the selected area.
-   const availableSlots = useMemo(() => {
-  if (!area?.slots) {
-    return [];
-  }
+    const availableSlots = useMemo(() => {
+        if (!area?.slots || !availability) {
+            return [];
+        }
 
-  // Show all slots until the user selects a date and time.
-  if (!date || !startTime) {
-    return area.slots;
-  }
+        const availableIds = new Set(
+            availability.availableSlotIds.map(String)
+        );
+        return area.slots.filter((slot) => availableIds.has(String(slot.id)));
+    }, [area, availability]);
 
-  const requestedStart = new Date(`${date}T${startTime}`);
-
-  const requestedEnd = new Date(
-    requestedStart.getTime() +
-      Number(duration) * 60 * 60 * 1000
-  );
-
-  return area.slots.filter((slot) => {
-    const hasOverlap = bookings.some((booking) => {
-      const sameArea =
-        String(booking.areaId) === String(area.id);
-
-      const sameSlot =
-        String(booking.slotId) === String(slot.id);
-
-      const activeBooking =
-        booking.status !== "cancelled";
-
-      if (!sameArea || !sameSlot || !activeBooking) {
-        return false;
-      }
-
-      const existingStart = new Date(
-        `${booking.date}T${booking.startTime}`
-      );
-
-      const existingEnd = new Date(
-        existingStart.getTime() +
-          Number(booking.duration) * 60 * 60 * 1000
-      );
-
-      return (
-        requestedStart < existingEnd &&
-        requestedEnd > existingStart
-      );
-    });
-
-    return !hasOverlap;
-  });
-}, [area, bookings, date, startTime, duration]);
+    const selectedSlotId = availableSlots.some(
+        (item) => String(item.id) === String(slotId)
+    )
+        ? slotId
+        : "";
 
     // Find the selected slot.
     const slot = area?.slots?.find(
-        (item) => String(item.id) === String(slotId)
+        (item) => String(item.id) === String(selectedSlotId)
     );
 
     // Use the backend slot price, falling back to the card price.
@@ -164,57 +201,12 @@ function Booking() {
 
         const start = new Date(`${date}T${startTime}`);
 
-        const end = new Date(
-            start.getTime() +
-                Number(duration) * 60 * 60 * 1000
-        );
-
         if (
             Number.isNaN(start.getTime()) ||
             start <= new Date()
         ) {
             setMessage(
                 "Please select a valid future date and time."
-            );
-            setMessageType("error");
-            return;
-        }
-
-        // Check whether the same slot is already booked.
-        const hasOverlap = bookings.some((booking) => {
-            const sameArea =
-                String(booking.areaId) === String(area.id);
-
-            const sameSlot =
-                String(booking.slotId) === String(slot.id);
-
-            if (
-                !sameArea ||
-                !sameSlot ||
-                booking.status === "cancelled"
-            ) {
-                return false;
-            }
-
-            const existingStart = new Date(
-                `${booking.date}T${booking.startTime}`
-            );
-
-            const existingEnd = new Date(
-                existingStart.getTime() +
-                    Number(booking.duration) *
-                    60 * 60 * 1000
-            );
-
-            return (
-                start < existingEnd &&
-                end > existingStart
-            );
-        });
-
-        if (hasOverlap) {
-            setMessage(
-                "This slot is already booked during that time. Please choose another time."
             );
             setMessageType("error");
             return;
@@ -227,6 +219,7 @@ function Booking() {
             slotName: slot.name,
             date,
             startTime,
+            timeZoneOffsetMinutes: start.getTimezoneOffset(),
             duration: Number(duration),
             pricePerHour,
             totalFee,
@@ -239,7 +232,7 @@ function Booking() {
             ).unwrap();
             await dispatch(fetchParkingSlots()).unwrap();
 
-            toast.success("Parking slot has been booked succesfully!")
+            toast.success("Parking slot has been booked successfully!")
 
             setSlotId("");
             setDate("");
@@ -258,7 +251,7 @@ function Booking() {
     };
 
     // Show a loading indicator while data is fetched.
-    if (areasLoading || bookingsLoading) {
+    if (areasLoading) {
         return (
             <Container
                 sx={{
@@ -276,11 +269,11 @@ function Booking() {
     }
 
     // Show errors returned by the API.
-    if (areasError || bookingError) {
+    if (areasError) {
         return (
             <Container sx={{ py: 5 }}>
                 <Alert severity="error">
-                    {areasError || bookingError}
+                    {areasError}
                 </Alert>
             </Container>
         );
@@ -329,7 +322,7 @@ function Booking() {
                         </Typography>
 
                         <Typography>
-                            ₹{selectedArea?.price ?? 0} / hour
+                            ₹{areaStartingPrice} / hour
                         </Typography>
                     </Box>
 
@@ -360,13 +353,16 @@ function Booking() {
                         <TextField
                             select
                             label="Parking Slot"
-                            value={slotId}
+                            value={selectedSlotId}
                             onChange={(event) => {
                                 setSlotId(event.target.value);
                                 clearMessage();
                             }}
                             disabled={
                                 !area ||
+                                selectedTimeIsPast ||
+                                availabilityLoading ||
+                                Boolean(availabilityError) ||
                                 availableSlots.length === 0
                             }
                             required
@@ -382,7 +378,23 @@ function Booking() {
                             ))}
                         </TextField>
 
-                        {area && availableSlots.length === 0 && (
+                        {availabilityError && (
+                            <Alert severity="error">{availabilityError}</Alert>
+                        )}
+
+                        {selectedTimeIsPast && (
+                            <Alert severity="warning">
+                                This date and time have already passed. Choose a future time to check slot availability.
+                            </Alert>
+                        )}
+
+                        {availabilityLoading && (
+                            <Typography color="text.secondary">
+                                Checking availability...
+                            </Typography>
+                        )}
+
+                        {area && !selectedTimeIsPast && !availabilityLoading && !availabilityError && availableSlots.length === 0 && (
                             <Alert severity="info">
                                 No available slots were found for this
                                 parking area.
@@ -401,13 +413,7 @@ function Booking() {
                             slotProps={{
                                 inputLabel: { shrink: true },
                                 htmlInput: {
-                                    min: new Date(
-                                        Date.now() -
-                                            new Date().getTimezoneOffset() *
-                                            60000
-                                    )
-                                        .toISOString()
-                                        .slice(0, 10),
+                                    min: minimumDate,
                                 },
                             }}
                             required

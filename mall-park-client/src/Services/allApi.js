@@ -12,6 +12,15 @@ export const allParkingAPI = async () => {
     return await apiService("GET", "/parking", {});
 };
 
+// Get safe slot availability without exposing customer booking details
+export const parkingAvailabilityAPI = async (filters = {}) => {
+    const params = new URLSearchParams(
+        Object.entries(filters).filter(([, value]) => value !== undefined && value !== "")
+    );
+    const query = params.toString();
+    return await apiService("GET", `/availability${query ? `?${query}` : ""}`, {});
+};
+
 // View a single parking slot
 export const viewParkingAPI = async (parkingId) => {
     return await apiService("GET", `/parking/${parkingId}`, {});

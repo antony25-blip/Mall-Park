@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import {
@@ -21,7 +21,7 @@ import {
 import { Link } from "react-router-dom";
 
 import { fetchParkingSlots } from "../redux/slice/parkingSlice";
-import { fetchBookings } from "../redux/slice/bookingSlice";
+import { parkingAvailabilityAPI } from "../Services/allApi";
 
 
 function ParkingAreas() {
@@ -34,20 +34,42 @@ function ParkingAreas() {
         error,
     } = useSelector((state) => state.parkingSlice);
 
-    // Get bookings from Redux
-    const {
-        bookings = [],
-    } = useSelector((state) => state.bookingSlice);
+    const [availability, setAvailability] = useState([]);
+    const [availabilityError, setAvailabilityError] = useState("");
 
 
-    // Fetch parking areas and bookings
+    // Fetch parking areas and public, PII-free availability
     useEffect(() => {
         dispatch(fetchParkingSlots());
-        dispatch(fetchBookings());
     }, [dispatch]);
 
+    useEffect(() => {
+        let mounted = true;
+        const loadAvailability = async () => {
+            try {
+                const response = await parkingAvailabilityAPI();
+                if (mounted) {
+                    setAvailability(response.data);
+                    setAvailabilityError("");
+                }
+            } catch (error) {
+                if (mounted) {
+                    setAvailabilityError(
+                        error.response?.data?.message ||
+                        "Unable to load current parking availability."
+                    );
+                }
+            }
+        };
 
-    // Loading screen
+        loadAvailability();
+        const timer = window.setInterval(loadAvailability, 60_000);
+        return () => {
+            mounted = false;
+            window.clearInterval(timer);
+        };
+    }, []);
+
     if (loading && areas.length === 0) {
         return (
             <Container
@@ -79,7 +101,6 @@ function ParkingAreas() {
         );
     }
 
-
     return (
         <Container
             maxWidth="lg"
@@ -88,7 +109,7 @@ function ParkingAreas() {
             <Typography
                 variant="h4"
                 fontWeight="bold"
-                textAlign="center"
+                sx={{ textAlign: "center" }}
             >
                 Available Parking Areas
             </Typography>
@@ -96,14 +117,35 @@ function ParkingAreas() {
             <Typography
                 variant="body1"
                 color="text.secondary"
-                textAlign="center"
-                sx={{
-                    mt: 1,
-                    mb: 4,
-                }}
+                sx={{ mt: 1, mb: 4, textAlign: "center" }}
             >
                 Choose a parking area that suits your needs.
             </Typography>
+
+            {availabilityError && (
+                <Alert
+                    severity="error"
+                    action={
+                        <Button
+                            color="inherit"
+                            onClick={() => {
+                                setAvailabilityError("");
+                                parkingAvailabilityAPI()
+                                    .then((response) => setAvailability(response.data))
+                                    .catch((error) => setAvailabilityError(
+                                        error.response?.data?.message ||
+                                        "Unable to load current parking availability."
+                                    ));
+                            }}
+                        >
+                            Retry
+                        </Button>
+                    }
+                    sx={{ mb: 3 }}
+                >
+                    Current availability is unavailable: {availabilityError}
+                </Alert>
+            )}
 
 
             <Box
@@ -121,26 +163,10 @@ function ParkingAreas() {
                     const slots = area.slots || [];
 
 
-                    // Count all active bookings for this area
-                    const activeBookings = bookings.filter(
-                        (booking) => {
-                            const sameArea =
-                                String(booking.areaId) ===
-                                String(area.id);
-
-                            const isActive =
-                                booking.status !== "cancelled";
-
-                            return sameArea && isActive;
-                        }
+                    const areaAvailability = availability.find(
+                        (entry) => String(entry.areaId) === String(area.id)
                     );
-
-
-                    // Each active booking reduces availability by one
-                    const availableSlots = Math.max(
-                        0,
-                        slots.length - activeBookings.length
-                    );
+                    const availableSlots = areaAvailability?.availableCount ?? 0;
 
 
                     // Find the lowest hourly price
@@ -226,11 +252,13 @@ function ParkingAreas() {
                                     state={{ area }}
                                     variant="contained"
                                     fullWidth
-                                    disabled={availableSlots === 0}
+                                    disabled={availableSlots === 0 || Boolean(availabilityError)}
                                     endIcon={<LuArrowRight />}
                                     sx={{ mt: 3 }}
                                 >
-                                    {availableSlots > 0
+                                    {availabilityError
+                                        ? "Availability unavailable"
+                                        : availableSlots > 0
                                         ? "Select Parking"
                                         : "Fully Booked"}
                                 </Button>

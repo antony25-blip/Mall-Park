@@ -1,7 +1,6 @@
 import { Box, Typography, Button } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { LuCircleParking } from 'react-icons/lu';
-import Footer from '../Components/Footer';
 
 
 function Home() {
@@ -33,8 +32,6 @@ function Home() {
     </Box>
     
   );
-  <Footer/>
 }
 
 export default Home;
-

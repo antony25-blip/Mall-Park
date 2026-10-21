@@ -102,68 +102,7 @@ export const createBooking = createAsyncThunk(
             }
 
 
-            // Get all existing bookings
-            const bookingsResponse = await allBookingAPI();
-
-            const existingBookings = bookingsResponse.data;
-
-
-            // Check for overlapping bookings
-            const hasOverlap = existingBookings.some((booking) => {
-                const sameArea =
-                    String(booking.areaId) ===
-                    String(bookingData.areaId);
-
-                const sameSlot =
-                    String(booking.slotId) ===
-                    String(bookingData.slotId);
-
-                const activeBooking =
-                    booking.status !== "cancelled";
-
-                if (
-                    !sameArea ||
-                    !sameSlot ||
-                    !activeBooking ||
-                    !booking.date ||
-                    !booking.startTime ||
-                    !Number.isFinite(Number(booking.duration)) ||
-                    Number(booking.duration) <= 0
-                ) {
-                    return false;
-                }
-
-                const existingStart = new Date(
-                    `${booking.date}T${booking.startTime}`
-                );
-
-                const existingEnd = new Date(
-                    existingStart.getTime() +
-                    Number(booking.duration) * 60 * 60 * 1000
-                );
-
-                if (
-                    Number.isNaN(existingStart.getTime()) ||
-                    Number.isNaN(existingEnd.getTime())
-                ) {
-                    return false;
-                }
-
-                return (
-                    newStart < existingEnd &&
-                    newEnd > existingStart
-                );
-            });
-
-
-            if (hasOverlap) {
-                return rejectWithValue(
-                    "This slot is already booked during the selected time. Please choose another slot or time."
-                );
-            }
-
-
-            // Save the booking without changing the slot status
+            // The API checks all users' bookings and calculates the authoritative fee.
             const bookingResponse = await addBookingAPI({
                 ...bookingData,
                 status: bookingData.status || "confirmed",
@@ -234,7 +173,12 @@ const bookingSlice = createSlice({
         error: null,
     },
 
-    reducers: {},
+    reducers: {
+        clearBookings: (state) => {
+            state.bookings = [];
+            state.error = null;
+        },
+    },
 
     extraReducers: (builder) => {
         builder
@@ -347,5 +291,7 @@ const bookingSlice = createSlice({
             });
     },
 });
+
+export const { clearBookings } = bookingSlice.actions;
 
 export default bookingSlice.reducer;

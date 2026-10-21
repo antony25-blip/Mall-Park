@@ -1,4 +1,3 @@
-import React from 'react'
 import ParkingAreas from '../Components/ParkingAreas'
 
 

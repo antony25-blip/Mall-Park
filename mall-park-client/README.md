@@ -37,6 +37,56 @@ State:
 - `loading` – Tracks API request status.
 - `error` – Stores API error messages.
 
+## Frontend deployment
+
+The Vite frontend can be deployed to Vercel from `mall-park-client`. Vercel
+builds with `npm run build` and serves the generated `dist` directory. The
+included `vercel.json` rewrite supports direct navigation to React routes.
+
+Local development sends API requests through the Vite `/api` proxy to
+`http://localhost:3000`, avoiding cross-origin browser cookie issues. Set
+`MALLPARK_API_TARGET` if the local API runs at a different address. For
+deployment, set `VITE_API_BASE_URL` in the Vercel project environment variables
+to the deployed API origin (for example, `https://api.example.com`). Vite
+environment variables are public in browser bundles and must not contain
+secrets.
+
+The JSON Server must be hosted separately and allow browser requests from the
+Vercel domain before the deployed frontend can load parking and booking data.
+
+## Customer and admin flows
+
+From the repository root, run `npm run dev` to start both the frontend and API.
+To run them separately, use `npm run dev` from `mall-park-client` and
+`npm run server` from the repository root in another terminal.
+
+Customers can browse parking and current availability without an account.
+Selecting a slot opens the booking flow; unauthenticated customers are sent to
+Register/Sign In and returned to the selected parking area after authentication.
+Signed-in customers can view and cancel their own future confirmed bookings.
+The admin dashboard shows all bookings and current parking availability, and
+supports vehicle check-in and check-out.
+
+Authentication and booking authorization are enforced by the API. Passwords
+are salted and hashed with Node's `scrypt`; signed, HTTP-only session cookies
+expire after eight hours. The public `/availability` endpoint returns slot
+identifiers and counts only, not customer booking details. Booking creation
+verifies the slot and time on the server and calculates the fee from the
+parking record.
+
+Run the API from `mall-park-server` with `npm start`. Configure
+`MALLPARK_JWT_SECRET` with a random value at least 32 bytes long. In production,
+also configure `MALLPARK_ADMIN_EMAIL` and `MALLPARK_ADMIN_PASSWORD` (at least 8
+characters) to provision the administrator account. Use a strong password in
+production. Keep these values on the
+server only; never put them in a `VITE_` variable or commit them. For local
+development only, the API generates a temporary token secret if one is not
+provided, so active sessions expire when the server restarts.
+
+Use HTTPS in production and set `MALLPARK_CLIENT_ORIGIN` to the frontend's
+origin (for example, `https://mallpark.example.com`). The JSON Server `db.json` contains account hashes and
+booking records; do not expose that file or the `/users` resource publicly.
+
 ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 # json-server:
