@@ -1,178 +1,297 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
-    Alert,
-    Box,
-    Button,
-    Card,
-    CardContent,
-    Chip,
-    CircularProgress,
-    Container,
-    Stack,
-    Typography,
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  CircularProgress,
+  Container,
+  Divider,
+  Stack,
+  Typography,
 } from "@mui/material";
+import EventAvailableOutlinedIcon from "@mui/icons-material/EventAvailableOutlined";
+import LocalParkingOutlinedIcon from "@mui/icons-material/LocalParkingOutlined";
+import ConfirmationNumberOutlinedIcon from "@mui/icons-material/ConfirmationNumberOutlined";
+import CurrencyRupeeOutlinedIcon from "@mui/icons-material/CurrencyRupeeOutlined";
+import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import { toast } from "react-toastify";
 import { editBooking, fetchBookings } from "../redux/slice/bookingSlice";
 import { getBookingStart } from "../utils/bookingUtils";
 
 const statusColors = {
-    confirmed: "info",
-    "checked-in": "warning",
-    "checked-out": "success",
-    cancelled: "default",
+  confirmed: "info",
+  "checked-in": "warning",
+  "checked-out": "success",
+  cancelled: "default",
 };
 
-function formatDate(date) {
-    if (!date) {
-        return "Date unavailable";
-    }
+const formatDate = (date) => {
+  if (!date) return "Date not available";
+  const parsedDate = new Date(`${date}T00:00:00`);
+  return Number.isNaN(parsedDate.getTime())
+    ? date
+    : parsedDate.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+};
 
-    const parsedDate = new Date(`${date}T00:00:00`);
-    return Number.isNaN(parsedDate.getTime())
-        ? date
-        : parsedDate.toLocaleDateString();
-}
+const formatTime = (time) => {
+  if (!time) return "Time not available";
+  const [hours, minutes] = time.split(":");
+  const parsedTime = new Date();
+  parsedTime.setHours(Number(hours), Number(minutes), 0, 0);
+  return parsedTime.toLocaleTimeString("en-IN", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+};
 
 function MyBookings() {
-    const dispatch = useDispatch();
-    const { bookings, loading, error } = useSelector(
-        (state) => state.bookingSlice
-    );
-    const [actionError, setActionError] = useState("");
-    const [currentTime, setCurrentTime] = useState(0);
+  const dispatch = useDispatch();
+  const { bookings = [], loading, error } = useSelector(
+    (state) => state.bookingSlice
+  );
+  const [cancellingId, setCancellingId] = useState(null);
+  const [actionError, setActionError] = useState("");
+  const [currentTime, setCurrentTime] = useState(0);
 
-    useEffect(() => {
-        dispatch(fetchBookings());
-    }, [dispatch]);
+  useEffect(() => {
+    dispatch(fetchBookings());
+  }, [dispatch]);
 
-    useEffect(() => {
-        const updateTime = () => setCurrentTime(Date.now());
-        updateTime();
-        const timer = window.setInterval(updateTime, 60_000);
-        return () => window.clearInterval(timer);
-    }, []);
+  useEffect(() => {
+    const updateTime = () => setCurrentTime(Date.now());
+    updateTime();
+    const timer = window.setInterval(updateTime, 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
-    const cancelBooking = async (booking) => {
-        setActionError("");
+  const sortedBookings = useMemo(
+    () =>
+      [...bookings].sort((a, b) => {
+        const dateA = new Date(`${a.date || "1970-01-01"}T${a.startTime || "00:00"}`);
+        const dateB = new Date(`${b.date || "1970-01-01"}T${b.startTime || "00:00"}`);
+        return dateB - dateA;
+      }),
+    [bookings]
+  );
 
-        try {
-            await dispatch(editBooking({
-                id: booking.id,
-                bookingData: { ...booking, status: "cancelled" },
-            })).unwrap();
-            toast.success("Booking cancelled.");
-        } catch (cancelError) {
-            const message = typeof cancelError === "string"
-                ? cancelError
-                : "Unable to cancel this booking. Please try again.";
-            setActionError(message);
-            toast.error(message);
-        }
-    };
+  const activeCount = bookings.filter(
+    (booking) =>
+      !["cancelled", "checked-out"].includes(booking.status?.toLowerCase())
+  ).length;
 
-    if (loading && bookings.length === 0) {
-        return (
-            <Container sx={{ py: 6, textAlign: "center" }}>
-                <CircularProgress />
-                <Typography sx={{ mt: 2 }}>Loading your bookings...</Typography>
-            </Container>
-        );
+  const handleCancel = async (booking) => {
+    const start = getBookingStart(booking);
+    const canCancel = booking.status === "confirmed" &&
+      start &&
+      currentTime > 0 &&
+      start.getTime() > currentTime;
+
+    if (!canCancel) return;
+    if (!window.confirm(`Are you sure you want to cancel booking #${booking.id}?`)) {
+      return;
     }
 
-    if (error && bookings.length === 0) {
-        return (
-            <Container maxWidth="md" sx={{ py: 5 }}>
-                <Alert
-                    severity="error"
-                    action={
-                        <Button color="inherit" onClick={() => dispatch(fetchBookings())}>
-                            Retry
+    setActionError("");
+    setCancellingId(booking.id);
+
+    try {
+      await dispatch(
+        editBooking({
+          id: booking.id,
+          bookingData: { ...booking, status: "cancelled" },
+        })
+      ).unwrap();
+
+      toast.success(`Booking #${booking.id} cancelled successfully.`);
+
+      try {
+        await dispatch(fetchBookings()).unwrap();
+      } catch {
+        const message = "The booking was cancelled, but the list could not be refreshed.";
+        setActionError(message);
+        toast.error(message);
+      }
+    } catch (cancelError) {
+      const message = typeof cancelError === "string"
+        ? cancelError
+        : "Could not cancel this booking. Please try again.";
+      setActionError(message);
+      toast.error(message);
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
+  return (
+    <Box sx={{ minHeight: "70vh", bgcolor: "#f4f7fb", py: { xs: 4, md: 6 } }}>
+      <Container maxWidth="lg">
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: { xs: "flex-start", sm: "center" },
+            justifyContent: "space-between",
+            flexDirection: { xs: "column", sm: "row" },
+            gap: 2,
+            mb: 4,
+          }}
+        >
+          <Box>
+            <Typography variant="overline" sx={{ color: "#168b83", fontWeight: 800, letterSpacing: 2 }}>
+              MALLPARK ACCOUNT
+            </Typography>
+            <Typography variant="h4" component="h1" sx={{ color: "#10243a", fontWeight: 800 }}>
+              My Bookings
+            </Typography>
+            <Typography sx={{ mt: 1, color: "text.secondary" }}>
+              View your parking reservations and manage your plans.
+            </Typography>
+          </Box>
+          <Box sx={{ bgcolor: "white", px: 2.5, py: 1.5, borderRadius: 3, boxShadow: "0 5px 20px rgba(16,36,58,0.06)" }}>
+            <Typography variant="body2" color="text.secondary">Active reservations</Typography>
+            <Typography variant="h5" sx={{ color: "#10243a", fontWeight: 800 }}>{activeCount}</Typography>
+          </Box>
+        </Box>
+
+        {actionError && <Alert severity="error" sx={{ mb: 2 }}>{actionError}</Alert>}
+
+        {loading && bookings.length === 0 && (
+          <Stack alignItems="center" spacing={2} sx={{ py: 8 }}>
+            <CircularProgress sx={{ color: "#168b83" }} />
+            <Typography color="text.secondary">Loading your reservations...</Typography>
+          </Stack>
+        )}
+
+        {error && bookings.length === 0 && (
+          <Alert
+            severity="error"
+            sx={{ mb: 3 }}
+            action={
+              <Button color="inherit" onClick={() => dispatch(fetchBookings())}>
+                Retry
+              </Button>
+            }
+          >
+            {error}
+          </Alert>
+        )}
+
+        {!loading && !error && sortedBookings.length === 0 && (
+          <Card sx={{ borderRadius: 4, textAlign: "center", py: 7, px: 3, boxShadow: "0 8px 30px rgba(16,36,58,0.06)" }}>
+            <Box sx={{ width: 72, height: 72, borderRadius: "50%", bgcolor: "#e6f6f4", color: "#168b83", display: "grid", placeItems: "center", mx: "auto", mb: 2 }}>
+              <EventAvailableOutlinedIcon sx={{ fontSize: 36 }} />
+            </Box>
+            <Typography variant="h5" sx={{ fontWeight: 800, color: "#10243a" }}>No bookings yet</Typography>
+            <Typography color="text.secondary" sx={{ mt: 1 }}>
+              Your parking reservations will appear here after you book a slot.
+            </Typography>
+            <Button href="/parking" variant="contained" sx={{ mt: 3, bgcolor: "#168b83", "&:hover": { bgcolor: "#11736d" } }}>
+              Find Parking
+            </Button>
+          </Card>
+        )}
+
+        {sortedBookings.length > 0 && (
+          <Stack spacing={2.5}>
+            {sortedBookings.map((booking) => {
+              const start = getBookingStart(booking);
+              const canCancel = booking.status === "confirmed" &&
+                start &&
+                currentTime > 0 &&
+                start.getTime() > currentTime;
+              const isCancelled = booking.status?.toLowerCase() === "cancelled";
+              const fee = Number(booking.totalFee ?? (Number(booking.pricePerHour || 0) * Number(booking.duration || 1)));
+              const statusLabel = booking.status || "confirmed";
+
+              return (
+                <Card key={booking.id} sx={{ borderRadius: 4, overflow: "hidden", boxShadow: "0 8px 28px rgba(16,36,58,0.07)", border: "1px solid #e7edf3" }}>
+                  <CardContent sx={{ p: { xs: 2.5, md: 3.5 } }}>
+                    <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }} spacing={2}>
+                      <Box>
+                        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                          <ConfirmationNumberOutlinedIcon sx={{ color: "#168b83" }} />
+                          <Typography variant="body2" color="text.secondary">Booking ID</Typography>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "#10243a" }}>#{booking.id ?? "N/A"}</Typography>
+                        </Stack>
+                        <Typography variant="h6" sx={{ fontWeight: 800, color: "#10243a" }}>
+                          {booking.areaName || "Parking Area"}
+                        </Typography>
+                        <Typography color="text.secondary" variant="body2">
+                          {booking.slotName || (booking.slotId ? `Slot ${booking.slotId}` : "Parking slot not specified")}
+                        </Typography>
+                      </Box>
+                      <Chip
+                        label={statusLabel.charAt(0).toUpperCase() + statusLabel.slice(1)}
+                        color={statusColors[statusLabel.toLowerCase()] || "default"}
+                        sx={{ fontWeight: 700, textTransform: "capitalize" }}
+                      />
+                    </Stack>
+
+                    <Divider sx={{ my: 2.5 }} />
+
+                    <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" }, gap: 2.5 }}>
+                      <Stack direction="row" spacing={1.5} alignItems="flex-start">
+                        <EventAvailableOutlinedIcon sx={{ color: "#168b83", mt: 0.3 }} />
+                        <Box>
+                          <Typography variant="caption" color="text.secondary">Date & start time</Typography>
+                          <Typography sx={{ fontWeight: 700 }}>{formatDate(booking.date)}</Typography>
+                          <Typography variant="body2" color="text.secondary">{formatTime(booking.startTime)}</Typography>
+                        </Box>
+                      </Stack>
+                      <Stack direction="row" spacing={1.5} alignItems="flex-start">
+                        <LocalParkingOutlinedIcon sx={{ color: "#168b83", mt: 0.3 }} />
+                        <Box>
+                          <Typography variant="caption" color="text.secondary">Duration</Typography>
+                          <Typography sx={{ fontWeight: 700 }}>{booking.duration ? `${booking.duration} hour${Number(booking.duration) === 1 ? "" : "s"}` : "Not specified"}</Typography>
+                          <Typography variant="body2" color="text.secondary">{booking.pricePerHour != null ? `₹${booking.pricePerHour} per hour` : "Hourly rate unavailable"}</Typography>
+                        </Box>
+                      </Stack>
+                      <Stack direction="row" spacing={1.5} alignItems="flex-start">
+                        <CurrencyRupeeOutlinedIcon sx={{ color: "#168b83", mt: 0.3 }} />
+                        <Box>
+                          <Typography variant="caption" color="text.secondary">Total parking fee</Typography>
+                          <Typography variant="h6" sx={{ fontWeight: 800, color: "#10243a" }}>₹{Number.isFinite(fee) ? fee.toLocaleString("en-IN") : "—"}</Typography>
+                        </Box>
+                      </Stack>
+                    </Box>
+
+                    <Stack direction={{ xs: "column-reverse", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "stretch", sm: "center" }} spacing={1.5} sx={{ mt: 3 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        {isCancelled
+                          ? "This reservation has been cancelled."
+                          : canCancel
+                            ? "Need to change your plans? You can cancel this reservation."
+                            : "This reservation can no longer be cancelled."}
+                      </Typography>
+                      {canCancel && (
+                        <Button
+                          variant="outlined"
+                          color="error"
+                          startIcon={cancellingId === booking.id ? <CircularProgress size={16} /> : <CancelOutlinedIcon />}
+                          disabled={cancellingId !== null}
+                          onClick={() => handleCancel(booking)}
+                          sx={{ alignSelf: { xs: "stretch", sm: "auto" }, whiteSpace: "nowrap" }}
+                        >
+                          {cancellingId === booking.id ? "Cancelling..." : "Cancel booking"}
                         </Button>
-                    }
-                >
-                    {error}
-                </Alert>
-            </Container>
-        );
-    }
-
-    return (
-        <Container maxWidth="md" sx={{ py: 5 }}>
-            <Typography variant="h4" fontWeight="bold">
-                My Bookings
-            </Typography>
-            <Typography color="text.secondary" sx={{ mt: 1, mb: 3 }}>
-                Review and manage the reservations saved by MallPark.
-            </Typography>
-            {actionError && <Alert severity="error" sx={{ mb: 2 }}>{actionError}</Alert>}
-            {error && bookings.length > 0 && (
-                <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
-            )}
-            {bookings.length === 0 ? (
-                <Alert severity="info">No bookings have been made yet.</Alert>
-            ) : (
-                <Stack spacing={2}>
-                    {bookings.map((booking) => {
-                        const start = getBookingStart(booking);
-                        const canCancel = booking.status === "confirmed" &&
-                            start &&
-                            currentTime > 0 &&
-                            start.getTime() > currentTime;
-
-                        return (
-                            <Card key={booking.id} variant="outlined">
-                                <CardContent
-                                    sx={{
-                                        display: "flex",
-                                        alignItems: { xs: "flex-start", sm: "center" },
-                                        justifyContent: "space-between",
-                                        flexDirection: { xs: "column", sm: "row" },
-                                        gap: 2,
-                                    }}
-                                >
-                                    <Box>
-                                        <Typography variant="h6" fontWeight="bold">
-                                            {booking.areaName || "Parking area"} · {booking.slotName || booking.slotId}
-                                        </Typography>
-                                        <Typography color="text.secondary">
-                                            {formatDate(booking.date)} at {booking.startTime || "time unavailable"}
-                                            {booking.duration ? ` · ${booking.duration} hour(s)` : ""}
-                                        </Typography>
-                                        <Typography variant="body2" color="text.secondary">
-                                            Booking #{booking.id}
-                                            {booking.totalFee != null ? ` · Total ₹${booking.totalFee}` : ""}
-                                        </Typography>
-                                    </Box>
-                                    <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-                                        <Chip
-                                            label={booking.status || "unknown"}
-                                            color={statusColors[booking.status] || "default"}
-                                        />
-                                        {canCancel && (
-                                            <Button
-                                                color="error"
-                                                variant="outlined"
-                                                disabled={loading}
-                                                onClick={() => cancelBooking(booking)}
-                                            >
-                                                Cancel
-                                            </Button>
-                                        )}
-                                    </Stack>
-                                </CardContent>
-                            </Card>
-                        );
-                    })}
-                </Stack>
-            )}
-            {loading && bookings.length > 0 && (
-                <Typography color="text.secondary" sx={{ mt: 2 }}>
-                    Updating booking...
-                </Typography>
-            )}
-        </Container>
-    );
+                      )}
+                    </Stack>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </Stack>
+        )}
+      </Container>
+    </Box>
+  );
 }
 
 export default MyBookings;
