@@ -2,7 +2,6 @@
   "name": "mall-park-workspace",
   "private": true,
   "scripts": {
-    "dev": "node scripts/dev.js",
     "server": "npm --prefix mall-park-server start",
     "build": "npm --prefix mall-park-client run build",
     "lint": "npm --prefix mall-park-client run lint"

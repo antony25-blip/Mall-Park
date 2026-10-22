@@ -243,6 +243,21 @@
       "totalFee": 240,
       "status": "cancelled",
       "id": 3
+    },
+    {
+      "userId": "a896d40f-b6b7-4d31-abb5-717f6e0f43a1",
+      "areaId": "2",
+      "areaName": "Ground Floor Parking",
+      "slotId": "B3",
+      "slotName": "Slot B3",
+      "date": "2026-10-23",
+      "startTime": "15:30",
+      "timeZoneOffsetMinutes": -330,
+      "duration": 1,
+      "pricePerHour": 40,
+      "totalFee": 40,
+      "status": "confirmed",
+      "id": 4
     }
   ],
   "users": [
@@ -259,8 +274,8 @@
       "name": "MallPark Admin",
       "email": "admin@mallpark.local",
       "role": "admin",
-      "salt": "3423c2f7e0a85cb03203d8ab0802c804",
-      "passwordHash": "d12f136c96246d3bc79e31ed2c173571d31c0edd22ed8c9403c2e03ef5a775cd59dc5e997a64dcef7576ca16dc6679857f2e23a1d68a9b7e1ab8fc56a89f04dd"
+      "salt": "73da9a5396002edaf909ae5495a0f58c",
+      "passwordHash": "610601d2c6aa7d8344aba701b1d55adafc9d175293e3870f844abbd419f45edd99bb7f06f2fe1c7f832ebf780e3207c5f50ae12dac1a32af8317d186841a6189"
     }
   ]
 }
