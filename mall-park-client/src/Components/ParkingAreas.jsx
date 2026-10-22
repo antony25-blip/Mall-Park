@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import {
@@ -21,11 +21,14 @@ import {
 import { Link } from "react-router-dom";
 
 import { fetchParkingSlots } from "../redux/slice/parkingSlice";
-import { parkingAvailabilityAPI } from "../Services/allApi";
+import AvailabilityFilters from "./AvailabilityFilters";
+import { useParkingAvailability } from "../hooks/useParkingAvailability";
+import { useAuth } from "../context/AuthContext";
 
 
 function ParkingAreas() {
     const dispatch = useDispatch();
+    const { user } = useAuth();
 
     // Get parking areas from Redux
     const {
@@ -34,41 +37,24 @@ function ParkingAreas() {
         error,
     } = useSelector((state) => state.parkingSlice);
 
-    const [availability, setAvailability] = useState([]);
-    const [availabilityError, setAvailabilityError] = useState("");
+    const {
+        availability,
+        date,
+        duration,
+        error: availabilityError,
+        loading: availabilityLoading,
+        setDate,
+        setDuration,
+        setStartTime,
+        startTime,
+        today,
+    } = useParkingAvailability();
 
 
     // Fetch parking areas and public, PII-free availability
     useEffect(() => {
         dispatch(fetchParkingSlots());
     }, [dispatch]);
-
-    useEffect(() => {
-        let mounted = true;
-        const loadAvailability = async () => {
-            try {
-                const response = await parkingAvailabilityAPI();
-                if (mounted) {
-                    setAvailability(response.data);
-                    setAvailabilityError("");
-                }
-            } catch (error) {
-                if (mounted) {
-                    setAvailabilityError(
-                        error.response?.data?.message ||
-                        "Unable to load current parking availability."
-                    );
-                }
-            }
-        };
-
-        loadAvailability();
-        const timer = window.setInterval(loadAvailability, 60_000);
-        return () => {
-            mounted = false;
-            window.clearInterval(timer);
-        };
-    }, []);
 
     if (loading && areas.length === 0) {
         return (
@@ -119,31 +105,25 @@ function ParkingAreas() {
                 color="text.secondary"
                 sx={{ mt: 1, mb: 4, textAlign: "center" }}
             >
-                Choose a parking area that suits your needs.
+                Check which slots are free now or for your planned visit.
             </Typography>
+
+            <AvailabilityFilters
+                date={date}
+                duration={duration}
+                setDate={setDate}
+                setDuration={setDuration}
+                setStartTime={setStartTime}
+                startTime={startTime}
+                today={today}
+            />
 
             {availabilityError && (
                 <Alert
-                    severity="error"
-                    action={
-                        <Button
-                            color="inherit"
-                            onClick={() => {
-                                setAvailabilityError("");
-                                parkingAvailabilityAPI()
-                                    .then((response) => setAvailability(response.data))
-                                    .catch((error) => setAvailabilityError(
-                                        error.response?.data?.message ||
-                                        "Unable to load current parking availability."
-                                    ));
-                            }}
-                        >
-                            Retry
-                        </Button>
-                    }
+                    severity={availabilityError.startsWith("Choose ") ? "info" : "error"}
                     sx={{ mb: 3 }}
                 >
-                    Current availability is unavailable: {availabilityError}
+                    {availabilityError}
                 </Alert>
             )}
 
@@ -166,6 +146,12 @@ function ParkingAreas() {
                     const areaAvailability = availability.find(
                         (entry) => String(entry.areaId) === String(area.id)
                     );
+                    const availableSlotIds = new Set(
+                        (areaAvailability?.availableSlotIds || []).map(String)
+                    );
+                    const availableSlotNames = slots
+                        .filter((slot) => availableSlotIds.has(String(slot.id)))
+                        .map((slot) => slot.name);
                     const availableSlots = areaAvailability?.availableCount ?? 0;
 
 
@@ -222,7 +208,13 @@ function ParkingAreas() {
 
 
                                 <Chip
-                                    label={`${availableSlots} slots available`}
+                                    label={areaAvailability
+                                        ? `${availableSlots} of ${areaAvailability.totalSlots} slots available`
+                                        : availabilityLoading
+                                            ? "Checking availability..."
+                                            : availabilityError?.startsWith("Choose ")
+                                                ? "Complete time selection"
+                                            : "Availability unavailable"}
                                     color={
                                         availableSlots > 0
                                             ? "success"
@@ -233,6 +225,16 @@ function ParkingAreas() {
                                         alignSelf: "flex-start",
                                     }}
                                 />
+
+                                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                                    {availableSlotNames.length
+                                        ? `Available: ${availableSlotNames.join(", ")}`
+                                        : availabilityLoading
+                                            ? "Checking available slot names..."
+                                            : availabilityError?.startsWith("Choose ")
+                                                ? "Select a date and time to see available slots."
+                                            : "No slots available for this time."}
+                                </Typography>
 
 
                                 <Typography
@@ -248,15 +250,24 @@ function ParkingAreas() {
 
                                 <Button
                                     component={Link}
-                                    to="/book"
-                                    state={{ area }}
+                                    to={user?.role === "admin" ? "/admin" : "/book"}
+                                    state={{
+                                        area,
+                                        availabilityFilters: { date, startTime, duration },
+                                    }}
                                     variant="contained"
                                     fullWidth
-                                    disabled={availableSlots === 0 || Boolean(availabilityError)}
+                                    disabled={
+                                        availabilityLoading ||
+                                        availableSlots === 0 ||
+                                        Boolean(availabilityError)
+                                    }
                                     endIcon={<LuArrowRight />}
                                     sx={{ mt: 3 }}
                                 >
-                                    {availabilityError
+                                    {user?.role === "admin"
+                                        ? "View Availability"
+                                        : availabilityError
                                         ? "Availability unavailable"
                                         : availableSlots > 0
                                         ? "Select Parking"

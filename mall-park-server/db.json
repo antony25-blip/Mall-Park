@@ -219,6 +219,24 @@
       "id": 1,
       "checkedInAt": "2026-10-22T04:01:09.585Z",
       "checkedOutAt": "2026-10-22T04:01:50.962Z"
+    },
+    {
+      "userId": "3",
+      "customerName": "Gishnu Prasad",
+      "customerEmail": "gishnugp7117@gmail.com",
+      "vehicleRegistration": "KL62G8680",
+      "areaId": "2",
+      "areaName": "Ground Floor Parking",
+      "slotId": "B3",
+      "slotName": "Slot B3",
+      "date": "2026-10-23",
+      "startTime": "10:10",
+      "timeZoneOffsetMinutes": -330,
+      "duration": 1,
+      "pricePerHour": 40,
+      "totalFee": 40,
+      "status": "confirmed",
+      "id": 2
     }
   ],
   "users": [
@@ -227,8 +245,8 @@
       "name": "MallPark Admin",
       "email": "admin@mallpark.local",
       "role": "admin",
-      "salt": "17b322f5a29d2580667563f92ca149e9",
-      "passwordHash": "54d21baf7ce90880394c608d8dc47ca9da0c19b07dff2d60c909dce0809f1e0d18dfbc06e230fb518b476284915896d3c427bca557e8ba847ec35f08003bcc74"
+      "salt": "5de3b64e37d4960cc6756293529126cd",
+      "passwordHash": "0072732c37acc1360f5fe3613c60b42e317b0119302d68c3782403679fbf82b6283311784db466b755b9625ee9731f16389edafdaf648ef08212a93d1504f1b3"
     },
     {
       "id": 3,

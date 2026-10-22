@@ -453,12 +453,16 @@ app.get('/availability', (req, res) => {
                     !occupiedSlotIds.has(String(slot.id))
                 )
                 .map((slot) => String(slot.id))
+            const occupiedSlotIdsInArea = (area.slots || [])
+                .filter((slot) => occupiedSlotIds.has(String(slot.id)))
+                .map((slot) => String(slot.id))
 
             return {
                 areaId: String(area.id),
                 totalSlots: (area.slots || []).length,
                 availableCount: availableSlotIds.length,
                 availableSlotIds,
+                occupiedSlotIds: occupiedSlotIdsInArea,
             }
         })
 
@@ -530,8 +534,8 @@ app.use((req, res, next) => {
     }
 
     if (req.method === 'POST') {
-        if (!['customer', 'admin'].includes(req.user.role)) {
-            return res.status(403).json({ message: 'A customer or admin account is required to create a booking.' })
+        if (req.user.role !== 'customer') {
+            return res.status(403).json({ message: 'Only customer accounts can create bookings.' })
         }
 
         const body = req.body || {}

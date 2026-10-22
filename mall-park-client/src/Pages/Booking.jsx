@@ -14,6 +14,7 @@ function Booking() {
 
     // Get the parking option selected on the Parking page.
     const selectedArea = location.state?.area;
+    const availabilityFilters = location.state?.availabilityFilters || {};
 
     // Read parking data from Redux.
     const {
@@ -37,9 +38,9 @@ function Booking() {
 
     // Form values.
     const [slotId, setSlotId] = useState("");
-    const [date, setDate] = useState("");
-    const [startTime, setStartTime] = useState("");
-    const [duration, setDuration] = useState(1);
+    const [date, setDate] = useState(availabilityFilters.date || "");
+    const [startTime, setStartTime] = useState(availabilityFilters.startTime || "");
+    const [duration, setDuration] = useState(Number(availabilityFilters.duration) || 1);
     const [vehicleRegistration, setVehicleRegistration] = useState("");
 
     const [message, setMessage] = useState("");
@@ -476,7 +477,7 @@ function Booking() {
                                 clearMessage();
                             }}
                         >
-                            {[1, 2, 3, 4, 5, 6, 8, 12].map(
+                            {[1, 2, 3, 4, 5, 6, 8, 12, 24].map(
                                 (hours) => (
                                     <MenuItem
                                         key={hours}

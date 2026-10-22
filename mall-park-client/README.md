@@ -60,16 +60,20 @@ From the repository root, run `npm run dev` to start both the frontend and API.
 To run them separately, use `npm run dev` from `mall-park-client` and
 `npm run server` from the repository root in another terminal.
 
-Customers can browse parking and current availability without an account.
+Customers can browse parking without an account and check available slots for
+the current moment or a selected future date, start time, and duration. Admins
+can use the same time-based availability filters on the slot availability
+dashboard. Booking management is available on its own admin page.
 Selecting a slot opens the booking flow; unauthenticated customers are sent to
 Register/Sign In and returned to the selected parking area after authentication.
 Customers enter a vehicle registration number when booking. The admin dashboard
 shows each reservation with the customer's name and account ID, vehicle
 registration, and booking details.
-Admins can also create bookings from the parking flow using their admin account.
 Signed-in customers can view and cancel their own future confirmed bookings.
-The admin dashboard shows all bookings and current parking availability, and
-supports vehicle check-in and check-out.
+The admin slot availability page shows current occupied slots as well as
+availability for a selected time. The separate booking management page shows
+all bookings and supports vehicle check-in and check-out. Admin accounts can
+view availability but cannot create customer bookings.
 Customer account IDs are sequential numbers. On API startup, existing UUID
 customer IDs are migrated to numbers and linked bookings are updated to match.
 
@@ -78,7 +82,8 @@ are salted and hashed with Node's `scrypt`; signed, HTTP-only session cookies
 expire after eight hours. The public `/availability` endpoint returns slot
 identifiers and counts only, not customer booking details. Booking creation
 verifies the slot and time on the server and calculates the fee from the
-parking record.
+parking record. The public `/availability` endpoint exposes only slot IDs and
+counts for available and occupied spaces, not customer booking details.
 
 Run the API from `mall-park-server` with `npm start`. Configure
 `MALLPARK_JWT_SECRET` with a random value at least 32 bytes long. In production,
