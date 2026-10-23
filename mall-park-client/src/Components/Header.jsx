@@ -38,20 +38,27 @@ function Header() {
             Home
           </Button>
 
-          <Button color="inherit" component={Link} to="/parking">
-            Find Parking
-          </Button>
+          {user?.role !== 'admin' && (
+            <Button color="inherit" component={Link} to="/parking">
+              Find Parking
+            </Button>
+          )}
 
-          {user && (
+          {user && user.role !== 'admin' && (
             <Button color="inherit" component={Link} to="/my-bookings">
               My Bookings
             </Button>
           )}
 
           {user?.role === 'admin' && (
-            <Button color="inherit" component={Link} to="/admin">
-              Admin Dashboard
-            </Button>
+            <>
+              <Button color="inherit" component={Link} to="/admin">
+                Booking Management
+              </Button>
+              <Button color="inherit" component={Link} to="/admin/availability">
+                Slot Availability
+              </Button>
+            </>
           )}
           {!user && !loading ? (
             <>

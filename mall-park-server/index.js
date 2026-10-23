@@ -1,10 +1,11 @@
 const crypto = require('crypto')
+const path = require('path')
 const { promisify } = require('util')
 const jsonServer = require('json-server')
 
 const scrypt = promisify(crypto.scrypt)
 const app = jsonServer.create()
-const router = jsonServer.router('db.json')
+const router = jsonServer.router(path.join(__dirname, 'db.json'))
 const PORT = Number(process.env.PORT) || 3000
 const TOKEN_LIFETIME_SECONDS = 8 * 60 * 60
 const DUMMY_PASSWORD_RECORD = {
@@ -15,6 +16,7 @@ const TOKEN_SECRET = process.env.MALLPARK_JWT_SECRET ||
     (process.env.NODE_ENV === 'production'
         ? null
         : crypto.randomBytes(32).toString('hex'))
+const legacyUserIds = new Map()
 
 if (!TOKEN_SECRET || Buffer.byteLength(TOKEN_SECRET) < 32) {
     throw new Error('Set MALLPARK_JWT_SECRET to a value of at least 32 bytes.')
@@ -153,6 +155,7 @@ function authenticate(req, res, next) {
         return res.status(401).json({ message: 'Please sign in to continue.' })
     }
 
+    user.sub = legacyUserIds.get(String(user.sub)) || String(user.sub)
     req.user = user
     next()
 }
@@ -229,6 +232,78 @@ function matchingBooking(bookingId) {
     ).value()
 }
 
+function customerForBooking(booking) {
+    const users = router.db.get('users').value()
+    const bookingUserId = String(booking.userId)
+    const migratedUserId = legacyUserIds.get(bookingUserId) || bookingUserId
+    return users.find((user) =>
+        String(user.id) === migratedUserId ||
+        legacyUserIds.get(String(user.id)) === bookingUserId
+    )
+}
+
+function bookingWithCustomerDetails(booking) {
+    const customer = customerForBooking(booking)
+    const storedName = booking.customerName === 'Unknown customer'
+        ? null
+        : booking.customerName
+    return {
+        ...booking,
+        customerName: storedName || customer?.name || 'Unknown customer',
+        customerEmail: booking.customerEmail || customer?.email || null,
+    }
+}
+
+function nextUserId() {
+    return router.db.get('users').value().reduce((maxId, user) =>
+        Math.max(maxId, Number(user.id) || 0), 0
+    ) + 1
+}
+
+function migrateUserIds() {
+    const existingUsers = router.db.get('users').value()
+    let nextId = existingUsers.reduce((maxId, user) => {
+        const id = Number(user.id)
+        return Number.isSafeInteger(id) && id > 0 ? Math.max(maxId, id) : maxId
+    }, 0) + 1
+
+    const migratedUsers = existingUsers.map((user) => {
+        const previousId = String(user.id)
+        const numericId = Number(user.id)
+        const id = Number.isSafeInteger(numericId) && numericId > 0
+            ? numericId
+            : nextId++
+
+        if (previousId !== String(id)) {
+            legacyUserIds.set(previousId, String(id))
+        }
+
+        return { ...user, id }
+    })
+    const migratedUsersById = new Map(
+        migratedUsers.map((user) => [String(user.id), user])
+    )
+    const migratedBookings = router.db.get('booking').value().map((booking) => {
+        const userId = legacyUserIds.get(String(booking.userId)) ||
+            String(booking.userId)
+        const customer = migratedUsersById.get(userId)
+
+        return {
+            ...booking,
+            userId,
+            ...(customer ? {
+                customerName: customer.name,
+                customerEmail: customer.email,
+            } : {}),
+        }
+    })
+
+    router.db
+        .set('users', migratedUsers)
+        .set('booking', migratedBookings)
+        .write()
+}
+
 async function provisionAdmin() {
     const email = process.env.MALLPARK_ADMIN_EMAIL?.trim().toLowerCase()
     const password = process.env.MALLPARK_ADMIN_PASSWORD
@@ -250,7 +325,7 @@ async function provisionAdmin() {
     } else {
         const credentials = await hashPassword(password)
         admin = {
-            id: crypto.randomUUID(),
+            id: nextUserId(),
             name: 'MallPark Admin',
             email,
             role: 'admin',
@@ -289,7 +364,7 @@ app.post('/auth/register', async (req, res) => {
             return res.status(409).json({ message: 'An account with this email already exists.' })
         }
         const user = {
-            id: crypto.randomUUID(),
+            id: nextUserId(),
             name,
             email,
             role: 'customer',
@@ -340,7 +415,7 @@ app.get('/auth/session', (req, res) => {
 
     return res.json({
         user: {
-            id: user.sub,
+            id: legacyUserIds.get(String(user.sub)) || user.sub,
             name: user.name,
             email: user.email,
             role: user.role,
@@ -401,12 +476,16 @@ app.get('/availability', (req, res) => {
                     !occupiedSlotIds.has(String(slot.id))
                 )
                 .map((slot) => String(slot.id))
+            const occupiedSlotIdsInArea = (area.slots || [])
+                .filter((slot) => occupiedSlotIds.has(String(slot.id)))
+                .map((slot) => String(slot.id))
 
             return {
                 areaId: String(area.id),
                 totalSlots: (area.slots || []).length,
                 availableCount: availableSlotIds.length,
                 availableSlotIds,
+                occupiedSlotIds: occupiedSlotIdsInArea,
             }
         })
 
@@ -448,20 +527,34 @@ app.use((req, res, next) => {
             if (!booking || (req.user.role !== 'admin' && String(booking.userId) !== req.user.sub)) {
                 return res.status(404).json({ message: 'Booking not found.' })
             }
-        } else if (req.user.role !== 'admin') {
-            req.query.userId = req.user.sub
+            if (req.user.role === 'admin') {
+                return res.json(bookingWithCustomerDetails(booking))
+            }
+        } else if (req.user.role === 'admin') {
+            return res.json(
+                router.db.get('booking').value().map(bookingWithCustomerDetails)
+            )
+        } else {
+            const bookings = router.db.get('booking')
+                .filter((entry) => String(entry.userId) === req.user.sub)
+                .value()
+                .map(bookingWithCustomerDetails)
+            return res.json(bookings)
         }
         return next()
     }
 
     if (req.method === 'POST') {
         if (req.user.role !== 'customer') {
-            return res.status(403).json({ message: 'Booking creation is reserved for customers.' })
+            return res.status(403).json({ message: 'Only customer accounts can create bookings.' })
         }
 
         const body = req.body || {}
         const { areaId, slotId, date, startTime } = body
         const duration = Number(body.duration)
+        const vehicleRegistration = typeof body.vehicleRegistration === 'string'
+            ? body.vehicleRegistration.trim().toUpperCase()
+            : ''
         const area = matchingArea(areaId)
         const slot = area?.slots?.find((entry) => String(entry.id) === String(slotId))
         const timeZoneOffsetMinutes = body.timeZoneOffsetMinutes === undefined
@@ -475,6 +568,9 @@ app.use((req, res, next) => {
             slot.status !== 'available' ||
             !date ||
             !startTime ||
+            vehicleRegistration.length < 2 ||
+            vehicleRegistration.length > 20 ||
+            !/^[A-Z0-9 -]+$/.test(vehicleRegistration) ||
             !Number.isInteger(duration) ||
             duration < 1 ||
             duration > 24 ||
@@ -500,6 +596,9 @@ app.use((req, res, next) => {
         }
         req.body = {
             userId: req.user.sub,
+            customerName: req.user.name,
+            customerEmail: req.user.email,
+            vehicleRegistration,
             areaId: area.id,
             areaName: area.name,
             slotId: slot.id,
@@ -566,13 +665,24 @@ app.use((req, res, next) => {
 
 app.use(router)
 
-provisionAdmin()
-    .then(() => {
-        app.listen(PORT, () => {
-            console.log(`MallPark API is running at port ${PORT}.`)
+let migrationFailed = false
+try {
+    migrateUserIds()
+} catch (error) {
+    console.error('Unable to migrate customer IDs:', error.message)
+    process.exitCode = 1
+    migrationFailed = true
+}
+
+if (!migrationFailed) {
+    provisionAdmin()
+        .then(() => {
+            app.listen(PORT, () => {
+                console.log(`MallPark API is running at port ${PORT}.`)
+            })
         })
-    })
-    .catch((error) => {
-        console.error('Unable to initialize MallPark API:', error.message)
-        process.exitCode = 1
-    })
+        .catch((error) => {
+            console.error('Unable to initialize MallPark API:', error.message)
+            process.exitCode = 1
+        })
+}

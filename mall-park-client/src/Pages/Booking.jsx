@@ -14,6 +14,7 @@ function Booking() {
 
     // Get the parking option selected on the Parking page.
     const selectedArea = location.state?.area;
+    const availabilityFilters = location.state?.availabilityFilters || {};
 
     // Read parking data from Redux.
     const {
@@ -37,9 +38,10 @@ function Booking() {
 
     // Form values.
     const [slotId, setSlotId] = useState("");
-    const [date, setDate] = useState("");
-    const [startTime, setStartTime] = useState("");
-    const [duration, setDuration] = useState(1);
+    const [date, setDate] = useState(availabilityFilters.date || "");
+    const [startTime, setStartTime] = useState(availabilityFilters.startTime || "");
+    const [duration, setDuration] = useState(Number(availabilityFilters.duration) || 1);
+    const [vehicleRegistration, setVehicleRegistration] = useState("");
 
     const [message, setMessage] = useState("");
     const [messageType, setMessageType] = useState("error");
@@ -190,6 +192,17 @@ function Booking() {
             return;
         }
 
+        const normalizedVehicleRegistration = vehicleRegistration.trim().toUpperCase();
+        if (
+            normalizedVehicleRegistration.length < 2 ||
+            normalizedVehicleRegistration.length > 20 ||
+            !/^[A-Z0-9 -]+$/.test(normalizedVehicleRegistration)
+        ) {
+            setMessage("Enter a valid vehicle registration number.");
+            setMessageType("error");
+            return;
+        }
+
         if (
             !Number.isInteger(Number(duration)) ||
             Number(duration) < 1
@@ -217,6 +230,7 @@ function Booking() {
             areaName: area.name,
             slotId: slot.id,
             slotName: slot.name,
+            vehicleRegistration: normalizedVehicleRegistration,
             date,
             startTime,
             timeZoneOffsetMinutes: start.getTimezoneOffset(),
@@ -238,6 +252,7 @@ function Booking() {
             setDate("");
             setStartTime("");
             setDuration(1);
+            setVehicleRegistration("");
 
         } catch (error) {
             setMessageType("error");
@@ -378,6 +393,22 @@ function Booking() {
                             ))}
                         </TextField>
 
+                        <TextField
+                            label="Vehicle Registration Number"
+                            value={vehicleRegistration}
+                            onChange={(event) => {
+                                setVehicleRegistration(event.target.value.toUpperCase());
+                                clearMessage();
+                            }}
+                            slotProps={{
+                                htmlInput: {
+                                    maxLength: 20,
+                                    autoCapitalize: "characters",
+                                },
+                            }}
+                            required
+                        />
+
                         {availabilityError && (
                             <Alert severity="error">{availabilityError}</Alert>
                         )}
@@ -446,7 +477,7 @@ function Booking() {
                                 clearMessage();
                             }}
                         >
-                            {[1, 2, 3, 4, 5, 6, 8, 12].map(
+                            {[1, 2, 3, 4, 5, 6, 8, 12, 24].map(
                                 (hours) => (
                                     <MenuItem
                                         key={hours}
@@ -506,6 +537,7 @@ function Booking() {
                                 submitting ||
                                 !area ||
                                 !slot ||
+                                !vehicleRegistration.trim() ||
                                 !date ||
                                 !startTime
                             }

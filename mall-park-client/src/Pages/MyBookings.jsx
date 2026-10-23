@@ -21,6 +21,7 @@ import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import { toast } from "react-toastify";
 import { editBooking, fetchBookings } from "../redux/slice/bookingSlice";
 import { getBookingStart } from "../utils/bookingUtils";
+import { useAuth } from "../context/AuthContext";
 
 const statusColors = {
   confirmed: "info",
@@ -54,6 +55,7 @@ const formatTime = (time) => {
 
 function MyBookings() {
   const dispatch = useDispatch();
+  const { user } = useAuth();
   const { bookings = [], loading, error } = useSelector(
     (state) => state.bookingSlice
   );
@@ -260,6 +262,28 @@ function MyBookings() {
                           <Typography variant="h6" sx={{ fontWeight: 800, color: "#10243a" }}>₹{Number.isFinite(fee) ? fee.toLocaleString("en-IN") : "—"}</Typography>
                         </Box>
                       </Stack>
+                    </Box>
+
+                    <Divider sx={{ my: 2.5 }} />
+
+                    <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" }, gap: 2.5 }}>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">Booked by</Typography>
+                        <Typography sx={{ fontWeight: 700 }}>
+                          {booking.customerName || user?.name || "Customer details unavailable"}
+                        </Typography>
+                        {(booking.customerEmail || user?.email) && (
+                          <Typography variant="body2" color="text.secondary">
+                            {booking.customerEmail || user.email}
+                          </Typography>
+                        )}
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">Vehicle registration</Typography>
+                        <Typography sx={{ fontWeight: 700 }}>
+                          {booking.vehicleRegistration || "Not available for this booking"}
+                        </Typography>
+                      </Box>
                     </Box>
 
                     <Stack direction={{ xs: "column-reverse", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "stretch", sm: "center" }} spacing={1.5} sx={{ mt: 3 }}>

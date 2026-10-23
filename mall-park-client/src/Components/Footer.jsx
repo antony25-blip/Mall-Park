@@ -69,20 +69,20 @@ function Footer() {
             </Link>
           </Grid>
 
-          {/* Bookings */}
+          {/* Account links */}
           <Grid size={{ xs: 6, md: 3 }}>
             <Typography variant="h6" fontWeight="bold" gutterBottom>
-              Bookings
+              {user?.role === "admin" ? "Admin" : "Bookings"}
             </Typography>
-
-            <Link component={RouterLink} to={user ? "/my-bookings" : "/login"} color="inherit" underline="hover" display="block" sx={{ mb: 1 }}>
-              Bookings
-            </Link>
-            <br />
 
             {user?.role === "admin" && (
               <Link component={RouterLink} to="/admin" color="inherit" underline="hover" display="block">
                 Admin Dashboard
+              </Link>
+            )}
+            {user?.role !== "admin" && (
+              <Link component={RouterLink} to={user ? "/my-bookings" : "/login"} color="inherit" underline="hover" display="block" sx={{ mb: 1 }}>
+                Bookings
               </Link>
             )}
           </Grid>
