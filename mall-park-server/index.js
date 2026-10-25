@@ -31,10 +31,10 @@ const allowedOrigins = [
     'http://localhost:5173',
     'https://mall-park-eight.vercel.app',
     'https://mall-park-mb797up04-antonyms-projects-781009d9.vercel.app',
+    'https://mall-park-5ndyrjypw-antonyms-projects-781009d9.vercel.app',
 ]
 
 
-app.use(jsonServer.defaults({ bodyParser: true, noCors: true }))
 
 app.use((req, res, next) => {
     const origin = req.get('origin')
@@ -67,6 +67,9 @@ app.use((req, res, next) => {
 
     next()
 })
+
+app.use(jsonServer.defaults({ bodyParser: true, noCors: true }))
+
 
 function toBase64Url(value) {
     return Buffer.from(value).toString('base64url')
