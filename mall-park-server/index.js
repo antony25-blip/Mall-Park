@@ -26,10 +26,13 @@ if (!process.env.MALLPARK_JWT_SECRET) {
     console.warn('Using a temporary development token secret; set MALLPARK_JWT_SECRET for stable sessions.')
 }
 
+
 const allowedOrigins = [
     'http://localhost:5173',
     'https://mall-park-eight.vercel.app',
+    'https://mall-park-mb797up04-antonyms-projects-781009d9.vercel.app',
 ]
+
 
 app.use(jsonServer.defaults({ bodyParser: true, noCors: true }))
 
