@@ -7,7 +7,7 @@ const apiBaseUrl = (
 
 const axiosInstance = axios.create({
   baseURL: apiBaseUrl,
-  timeout: 5000,
+  timeout: 30000,
   withCredentials: true,
 });
 

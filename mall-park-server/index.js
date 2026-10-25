@@ -26,24 +26,42 @@ if (!process.env.MALLPARK_JWT_SECRET) {
     console.warn('Using a temporary development token secret; set MALLPARK_JWT_SECRET for stable sessions.')
 }
 
-const allowedOrigin = process.env.MALLPARK_CLIENT_ORIGIN || 'http://localhost:5173'
+const allowedOrigins = [
+    'http://localhost:5173',
+    'https://mall-park-eight.vercel.app',
+]
 
 app.use(jsonServer.defaults({ bodyParser: true, noCors: true }))
+
 app.use((req, res, next) => {
     const origin = req.get('origin')
-    if (origin && origin !== allowedOrigin) {
-        return res.status(403).json({ message: 'This browser origin is not allowed.' })
+
+    if (origin && !allowedOrigins.includes(origin)) {
+        return res.status(403).json({
+            message: 'This browser origin is not allowed.',
+        })
     }
+
     if (origin) {
         res.set('Access-Control-Allow-Origin', origin)
         res.set('Vary', 'Origin')
         res.set('Access-Control-Allow-Credentials', 'true')
     }
-    res.set('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS')
-    res.set('Access-Control-Allow-Headers', 'Authorization,Content-Type')
+
+    res.set(
+        'Access-Control-Allow-Methods',
+        'GET,POST,PUT,PATCH,DELETE,OPTIONS'
+    )
+
+    res.set(
+        'Access-Control-Allow-Headers',
+        'Authorization,Content-Type'
+    )
+
     if (req.method === 'OPTIONS') {
         return res.sendStatus(204)
     }
+
     next()
 })
 
